@@ -1,78 +1,215 @@
 'use client'
-import React from 'react'
-import { useForm } from 'react-hook-form'
 
-import { X } from 'lucide-react'
-import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
-import { Modal } from '@/components/Modal'
-import { useHome } from '@/hooks'
-import { increment } from '@/store/modules/count/slice'
+import { useRouter } from 'next/navigation'
 
-import style from './Home.module.scss'
+const LANGUAGE_NAMES: Record<string, string> = {
+  por: 'Português',
+  eng: 'Inglês',
+  spa: 'Espanhol',
+  fra: 'Francês',
+  deu: 'Alemão',
+  ita: 'Italiano',
+  rus: 'Russo',
+  jpn: 'Japonês',
+  zho: 'Chinês',
+  ara: 'Árabe',
+  hin: 'Hindi',
+}
+
+type Country = {
+  cca3: string;
+  name: {
+    common: string;
+    official: string;
+    nativeName?: {
+      por?: { official: string; common: string };
+    };
+  };
+  flags: {
+    svg: string;
+    png: string;
+  };
+  region: string;
+  languages?: {
+    [key: string]: string;
+  };
+  currencies?: {
+    [key: string]: {
+      name: string;
+      symbol: string;
+    };
+  };
+};
+
 export default function Home() {
-  const { count, dispatch, user, showModal, setShowModal, handleGetUser } =
-    useHome()
-  const { register, handleSubmit } = useForm<{ search: string }>()
+  const [countries, setCountries] = useState<Country[]>([])
+  const [availableLanguages, setAvailableLanguages] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedContinents, setSelectedContinents] = useState<string[]>([])
+  const [selectedLanguage, setSelectedLanguage] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 12
+  const router = useRouter()
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all')
+        const data = await response.json()
+        setCountries(data)
+
+        const langs = new Set<string>()
+        data.forEach((country: Country) => {
+          if (country.languages) {
+            Object.keys(country.languages).forEach((lang) => langs.add(lang))
+          }
+        })
+        setAvailableLanguages(Array.from(langs).sort())
+      } catch (error) {
+        console.error('Erro ao buscar países:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCountries()
+  }, [])
+
+  const handleContinentChange = (continent: string) => {
+    setSelectedContinents(prev =>
+      prev.includes(continent)
+        ? prev.filter(c => c !== continent)
+        : [...prev, continent]
+    )
+  }
+
+  const filteredCountries = countries.filter((country) => {
+    const name = country.name.nativeName?.por?.common || country.name.common
+    const regionMatch =
+      selectedContinents.length === 0 || selectedContinents.includes(country.region)
+    const languageMatch =
+      selectedLanguage === '' ||
+      Object.keys(country.languages || {}).includes(selectedLanguage)
+
+    return (
+      name.toLowerCase().includes(search.toLowerCase()) &&
+      regionMatch &&
+      languageMatch
+    )
+  })
+
+  const totalPages = Math.ceil(filteredCountries.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const currentCountries = filteredCountries.slice(startIndex, startIndex + itemsPerPage)
+
   return (
-    <main className={style.content}>
-      <Image className="mb-5" src="/img/logo.png" alt="Logo da Plan Marketing" width={200} height={200} />
-      <h1 className={style.title}>Template para desenvolvimento Plan</h1>
-      <p className={style.text}>{count}</p>
-      <button className={style.button} onClick={() => dispatch(increment())}>
-        count
-      </button>
-      <form className="flex m-3 gap-2" onSubmit={handleSubmit(handleGetUser)}>
-        <input
-          {...register('search', { required: true })}
-          className="placeholder:italic placeholder:text-slate-400 block bg-white w-full border border-slate-300 rounded-md py-2 pl-9 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 sm:text-sm"
-          placeholder="Informe um github user"
-          type="text"
-          name="search"
-        />
-        <button type="submit" className={style.button}>
-          Procurar
-        </button>
-      </form>
-      {showModal && (
-        <Modal.Root>
-          <Modal.Header title="Usuário">
-            <X
-              onClick={() => setShowModal(false)}
-              color="white"
-              className="ml-auto cursor-pointer"
+    <main className="p-8 max-w-screen-lg mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center">Catálogo de Países</h1>
+
+      <input
+        type="text"
+        placeholder="Buscar por nome..."
+        className="border px-4 py-2 rounded mb-6 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setCurrentPage(1)
+        }}
+      />
+
+      <div className="mb-6">
+        <label className="block font-semibold mb-2">Filtrar por continente:</label>
+        {['Africa', 'Americas', 'Asia', 'Europe', 'Oceania'].map((continent) => (
+          <label key={continent} className="mr-4">
+            <input
+              type="checkbox"
+              value={continent}
+              checked={selectedContinents.includes(continent)}
+              onChange={() => {
+                handleContinentChange(continent)
+                setCurrentPage(1)
+              }}
+              className="mr-1"
             />
-          </Modal.Header>
-          <Modal.Content>
-            {user?.login && (
-              <div className="flex flex-col justify-center content-center p-5">
+            {continent}
+          </label>
+        ))}
+      </div>
+
+      <div className="mb-6">
+        <label className="block font-semibold mb-2">Filtrar por idioma:</label>
+        <select
+          value={selectedLanguage}
+          onChange={(e) => {
+            setSelectedLanguage(e.target.value)
+            setCurrentPage(1)
+          }}
+          className="border px-4 py-2 rounded w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Todos os idiomas</option>
+          {availableLanguages.map((lang) => (
+            <option key={lang} value={lang}>
+              {LANGUAGE_NAMES[lang] || lang}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-gray-500">Carregando países...</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {currentCountries.map((country) => (
+              <div
+                key={country.cca3}
+                className="border p-4 rounded-xl shadow hover:shadow-2xl transition-all duration-300 cursor-pointer bg-white"
+                onClick={() => router.push(`/country/${country.cca3}`)}
+              >
                 <img
-                  className="m-auto rounded-full w-32"
-                  src={user.avatarUrl}
-                  alt={user.name}
+                  src={country.flags.png}
+                  alt={`Bandeira de ${country.name.common}`}
+                  className="w-20 h-auto mb-3"
                 />
-                <h3 className="m-auto text-xl text-blue_intermediate font-semibold">
-                  {user.name}
-                </h3>
-                <a
-                  target="_blank"
-                  href={user.htmlUrl}
-                  className="m-auto hover:text-blue_light"
-                  rel="noreferrer">
-                  {user.login}
-                </a>
-                <p className="m-auto">Criado em: {user.createdAt}</p>
+                <h2 className="text-lg font-bold mb-1">
+                  {country.name.nativeName?.por?.common || country.name.common}
+                </h2>
+                <p className="text-sm text-gray-600">Região: {country.region}</p>
+                <p className="text-sm text-gray-600">
+                  Moeda:{' '}
+                  {country.currencies
+                    ? Object.values(country.currencies)
+                      .map((currency) => `${currency.name} (${currency.symbol})`)
+                      .join(', ')
+                    : 'N/A'}
+                </p>
               </div>
-            )}
-            {!user?.login && (
-              <div className="flex grow flex-col justify-center content-center p-5">
-                <h3 className="m-auto text-xl text-blue_intermediate font-semibold">
-                  Usuário não encontrado
-                </h3>
-              </div>
-            )}
-          </Modal.Content>
-        </Modal.Root>
+            ))}
+          </div>
+
+          <div className="flex justify-center items-center mt-8 gap-4">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded bg-blue-500 text-white disabled:bg-gray-300"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-700">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded bg-blue-500 text-white disabled:bg-gray-300"
+            >
+              Próxima
+            </button>
+          </div>
+        </>
       )}
     </main>
   )

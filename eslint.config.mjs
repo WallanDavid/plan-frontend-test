@@ -40,13 +40,9 @@ export default defineConfig([
     },
 
     rules: {
-      indent: [
-        'error',
-        2,
-        {
-          SwitchCase: 1,
-        },
-      ],
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/display-name': 'off',
 
       quotes: [
         'error',
@@ -57,11 +53,17 @@ export default defineConfig([
       ],
 
       semi: ['error', 'never'],
+      indent: [
+        'error',
+        2,
+        {
+          SwitchCase: 1,
+        },
+      ],
+
       'no-empty-function': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      'react/display-name': 'off',
-      'react/prop-types': 'off',
 
       'import-helpers/order-imports': [
         'error',
@@ -73,7 +75,6 @@ export default defineConfig([
             '/^@/',
             ['parent', 'sibling', 'index'],
           ],
-
           alphabetize: {
             order: 'asc',
             ignoreCase: true,
