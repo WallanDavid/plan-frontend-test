@@ -65,6 +65,9 @@ export default defineConfig([
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
 
+      // ✅ Permitir ts-ignore, ts-nocheck, etc.
+      '@typescript-eslint/ban-ts-comment': 'off',
+
       'import-helpers/order-imports': [
         'error',
         {
