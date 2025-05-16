@@ -1,14 +1,10 @@
-import { Metadata } from 'next'
+// src/app/country/[countryCode]/page.tsx
+import Image from 'next/image'
+import { notFound } from 'next/navigation'
 
-type CountryParams = {
+type PageProps = {
   params: {
     countryCode: string
-  }
-}
-
-export const generateMetadata = async ({ params }: CountryParams): Promise<Metadata> => {
-  return {
-    title: `Detalhes - ${params.countryCode}`
   }
 }
 
@@ -18,15 +14,23 @@ async function getCountry(code: string) {
   return data[0]
 }
 
-export default async function CountryPage({ params }: CountryParams) {
+export default async function CountryPage({ params }: PageProps) {
   const country = await getCountry(params.countryCode)
+
+  if (!country) return notFound()
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
+      <h1 className="text-3xl font-bold mb-4">
         {country.translations?.por?.common || country.name.common}
       </h1>
-      <img src={country.flags.svg} alt={country.name.common} className="w-48 mb-4" />
+      <Image
+        src={country.flags.svg}
+        alt={country.name.common}
+        width={320}
+        height={200}
+        className="mb-4 border"
+      />
       <p><strong>População:</strong> {country.population.toLocaleString()}</p>
       <p><strong>Moedas:</strong>{' '}
         {country.currencies
