@@ -1,23 +1,13 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-type Props = {
-  params: {
-    countryCode: string
-  }
-}
+export default async function CountryPage({ params }: { params: { countryCode: string } }) {
+  const res = await fetch(`https://restcountries.com/v3.1/alpha/${params.countryCode}`)
 
-async function getCountry(code: string) {
-  const res = await fetch(`https://restcountries.com/v3.1/alpha/${code}`)
-
-  if (!res.ok) return null
+  if (!res.ok) return notFound()
 
   const data = await res.json()
-  return data[0]
-}
-
-export default async function CountryPage({ params }: Props) {
-  const country = await getCountry(params.countryCode)
+  const country = data[0]
 
   if (!country) return notFound()
 
