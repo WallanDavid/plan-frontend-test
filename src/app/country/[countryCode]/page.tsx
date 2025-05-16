@@ -1,14 +1,16 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-export default async function CountryPage({ params }: { params: { countryCode: string } }) {
+export default async function CountryPage({
+  params,
+}: {
+  params: { countryCode: string }
+}) {
   const res = await fetch(`https://restcountries.com/v3.1/alpha/${params.countryCode}`)
-
   if (!res.ok) return notFound()
 
   const data = await res.json()
   const country = data[0]
-
   if (!country) return notFound()
 
   return (
@@ -26,21 +28,14 @@ export default async function CountryPage({ params }: { params: { countryCode: s
       />
 
       <p><strong>População:</strong> {country.population.toLocaleString()}</p>
-
       <p><strong>Moedas:</strong>{' '}
         {country.currencies
-          ? Object.values(country.currencies)
-            .map((c: any) => `${c.name} (${c.symbol})`)
-            .join(', ')
+          ? Object.values(country.currencies).map((c: any) => `${c.name} (${c.symbol})`).join(', ')
           : 'N/A'}
       </p>
-
       <p><strong>Línguas:</strong>{' '}
-        {country.languages
-          ? Object.values(country.languages).join(', ')
-          : 'N/A'}
+        {country.languages ? Object.values(country.languages).join(', ') : 'N/A'}
       </p>
-
       <p><strong>Região:</strong> {country.region}</p>
       <p><strong>Sub-região:</strong> {country.subregion}</p>
     </div>
