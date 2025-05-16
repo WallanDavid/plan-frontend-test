@@ -1,8 +1,7 @@
-// src/app/country/[countryCode]/page.tsx
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
-type PageProps = {
+type Props = {
   params: {
     countryCode: string
   }
@@ -10,11 +9,14 @@ type PageProps = {
 
 async function getCountry(code: string) {
   const res = await fetch(`https://restcountries.com/v3.1/alpha/${code}`)
+
+  if (!res.ok) return null
+
   const data = await res.json()
   return data[0]
 }
 
-export default async function CountryPage({ params }: PageProps) {
+export default async function CountryPage({ params }: Props) {
   const country = await getCountry(params.countryCode)
 
   if (!country) return notFound()
@@ -24,22 +26,31 @@ export default async function CountryPage({ params }: PageProps) {
       <h1 className="text-3xl font-bold mb-4">
         {country.translations?.por?.common || country.name.common}
       </h1>
+
       <Image
         src={country.flags.svg}
-        alt={country.name.common}
+        alt={`Bandeira de ${country.name.common}`}
         width={320}
         height={200}
         className="mb-4 border"
       />
+
       <p><strong>População:</strong> {country.population.toLocaleString()}</p>
+
       <p><strong>Moedas:</strong>{' '}
         {country.currencies
-          ? Object.values(country.currencies).map((c: any) => `${c.name} (${c.symbol})`).join(', ')
+          ? Object.values(country.currencies)
+            .map((c: any) => `${c.name} (${c.symbol})`)
+            .join(', ')
           : 'N/A'}
       </p>
+
       <p><strong>Línguas:</strong>{' '}
-        {country.languages ? Object.values(country.languages).join(', ') : 'N/A'}
+        {country.languages
+          ? Object.values(country.languages).join(', ')
+          : 'N/A'}
       </p>
+
       <p><strong>Região:</strong> {country.region}</p>
       <p><strong>Sub-região:</strong> {country.subregion}</p>
     </div>
